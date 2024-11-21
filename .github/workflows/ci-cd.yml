@@ -4,16 +4,14 @@ on:
   push:
     branches: 
       - main
-      - develop
   pull_request:
     branches:
       - main
-      - develop
 
 env:
   IMAGE_NAME: health-calculator-service
   PORT: 5000
-  PYTHON_VERSION: '3.10'
+  PYTHON_VERSION: '3.11'
 
 jobs:
   code-quality:
@@ -31,11 +29,7 @@ jobs:
       
       - name: Install Dependencies
         run: |
-          python -m venv venv
-          . venv/bin/activate
-          pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pytest coverage flake8
+          make init
       
       - name: Lint Code
         run: |
@@ -44,8 +38,7 @@ jobs:
       
       - name: Run Tests
         run: |
-          . venv/bin/activate
-          python -m pytest tests/ -v
+          make test
       
       - name: Check Test Coverage
         run: |
@@ -65,27 +58,12 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-      
       - name: Build Docker Image
         run: |
-          make docker-build \
-            DOCKER_REGISTRY=${{ secrets.DOCKER_REGISTRY }} \
-            DOCKER_TAG=${{ github.sha }}
-      
-      - name: Push Docker Image
-        if: github.ref == 'refs/heads/main'
-        run: |
-          make docker-push \
-            DOCKER_REGISTRY=${{ secrets.DOCKER_REGISTRY }} \
-            DOCKER_TAG=${{ github.sha }}
+          make build
 
   deploy:
-    name: Deploy to Production
+    name: Deploy to Azure Web App
     needs: [code-quality, docker-build]
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
@@ -99,7 +77,7 @@ jobs:
         with:
           app-name: 'health-calculator-app'
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          images: ${{ secrets.DOCKER_REGISTRY }}${{ env.IMAGE_NAME }}:${{ github.sha }}
+          package: ./
 
       - name: Send Deployment Notification
         if: success()
