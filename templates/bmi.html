@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Calcul IMC{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>Calculateur d'IMC</h1>
+    
+    {% if error %}
+    <div class="error">{{ error }}</div>
+    {% endif %}
+    
+    <form method="POST">
+        <div class="form-group">
+            <label for="height">Taille (cm)</label>
+            <input type="number" step="0.1" id="height" name="height" required placeholder="Ex: 175">
+        </div>
+        
+        <div class="form-group">
+            <label for="weight">Poids (kg)</label>
+            <input type="number" step="0.1" id="weight" name="weight" required placeholder="Ex: 70">
+        </div>
+        
+        <div class="buttons">
+            <button type="submit" class="btn">Calculer</button>
+            <a href="{{ url_for('home') }}" class="btn btn-back">Retour</a>
+        </div>
+    </form>
+    
+    {% if result %}
+    <div class="result">
+        <h2>Résultats</h2>
+        <p>Votre IMC est de <strong>{{ result.bmi }}</strong></p>
+        <p>Catégorie : <strong>{{ result.category }}</strong></p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

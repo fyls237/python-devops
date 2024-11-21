@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template, redirect, url_for
 from http import HTTPStatus
 from typing import Dict, Any
 from health_utils import calculate_bmi, calculate_bmr
@@ -17,8 +17,12 @@ def validate_basic_data(data: Dict[str, Any]) -> tuple[bool, str]:
         if field not in data:
             return False, f"Le champ '{field}' est manquant"
         
-        if not isinstance(data[field], (int, float)) or data[field] <= 0:
-            return False, f"Le champ '{field}' doit être un nombre positif"
+        try:
+            value = float(data[field])
+            if value <= 0:
+                return False, f"Le champ '{field}' doit être un nombre positif"
+        except ValueError:
+            return False, f"Le champ '{field}' doit être un nombre"
     
     return True, ""
 
@@ -32,8 +36,12 @@ def validate_bmr_data(data: Dict[str, Any]) -> tuple[bool, str]:
     
     if 'age' not in data:
         return False, "Le champ 'age' est manquant"
-    if not isinstance(data['age'], (int, float)) or data['age'] <= 0:
-        return False, "L'âge doit être un nombre positif"
+    try:
+        age = float(data['age'])
+        if age <= 0:
+            return False, "L'âge doit être un nombre positif"
+    except ValueError:
+        return False, "L'âge doit être un nombre"
     
     if 'gender' not in data:
         return False, "Le champ 'gender' est manquant"
@@ -42,65 +50,55 @@ def validate_bmr_data(data: Dict[str, Any]) -> tuple[bool, str]:
     
     return True, ""
 
-@app.route('/health/bmi', methods=['POST'])
-def calculate_body_mass_index():
-    """
-    Calcule l'Indice de Masse Corporelle (IMC).
-    """
-    try:
-        data = request.get_json()
+@app.route("/")
+def home():
+    return render_template('home.html')
+
+@app.route('/health/bmi', methods=['GET', 'POST'])
+def bmi():
+    if request.method == 'POST':
+        data = request.form
         is_valid, error_message = validate_basic_data(data)
         
         if not is_valid:
-            return jsonify({
-                'error': error_message
-            }), HTTPStatus.BAD_REQUEST
+            return render_template('bmi.html', error=error_message)
         
         bmi = calculate_bmi(
-            height=data['height'],
-            weight=data['weight']
+            height=float(data['height']),
+            weight=float(data['weight'])
         )
         
-        return jsonify({
+        result = {
             'bmi': round(bmi, 2),
-            'message': get_bmi_category(bmi)
-        })
-        
-    except Exception as e:
-        return jsonify({
-            'error': f"Une erreur s'est produite: {str(e)}"
-        }), HTTPStatus.INTERNAL_SERVER_ERROR
+            'category': get_bmi_category(bmi)
+        }
+        return render_template('bmi.html', result=result)
+    
+    return render_template('bmi.html')
 
-@app.route('/health/bmr', methods=['POST'])
-def calculate_basal_metabolic_rate():
-    """
-    Calcule le Métabolisme de Base (BMR).
-    """
-    try:
-        data = request.get_json()
+@app.route('/health/bmr', methods=['GET', 'POST'])
+def bmr():
+    if request.method == 'POST':
+        data = request.form
         is_valid, error_message = validate_bmr_data(data)
         
         if not is_valid:
-            return jsonify({
-                'error': error_message
-            }), HTTPStatus.BAD_REQUEST
+            return render_template('bmr.html', error=error_message)
         
         bmr = calculate_bmr(
-            height=data['height'],
-            weight=data['weight'],
-            age=data['age'],
+            height=float(data['height']),
+            weight=float(data['weight']),
+            age=float(data['age']),
             gender=data['gender']
         )
         
-        return jsonify({
+        result = {
             'bmr': round(bmr, 2),
             'daily_calories': get_daily_calories(bmr)
-        })
-        
-    except Exception as e:
-        return jsonify({
-            'error': f"Une erreur s'est produite: {str(e)}"
-        }), HTTPStatus.INTERNAL_SERVER_ERROR
+        }
+        return render_template('bmr.html', result=result)
+    
+    return render_template('bmr.html')
 
 def get_bmi_category(bmi: float) -> str:
     """

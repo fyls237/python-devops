@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}Calcul BMR{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>Calculateur de BMR</h1>
+    
+    {% if error %}
+    <div class="error">{{ error }}</div>
+    {% endif %}
+    
+    <form method="POST">
+        <div class="form-group">
+            <label for="height">Taille (cm)</label>
+            <input type="number" step="0.1" id="height" name="height" required placeholder="Ex: 175">
+        </div>
+        
+        <div class="form-group">
+            <label for="weight">Poids (kg)</label>
+            <input type="number" step="0.1" id="weight" name="weight" required placeholder="Ex: 70">
+        </div>
+        
+        <div class="form-group">
+            <label for="age">Âge</label>
+            <input type="number" id="age" name="age" required placeholder="Ex: 30">
+        </div>
+        
+        <div class="form-group">
+            <label for="gender">Genre</label>
+            <select id="gender" name="gender" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 16px;">
+                <option value="">Sélectionnez votre genre</option>
+                <option value="M">Homme</option>
+                <option value="F">Femme</option>
+            </select>
+        </div>
+        
+        <div class="buttons">
+            <button type="submit" class="btn">Calculer</button>
+            <a href="{{ url_for('home') }}" class="btn btn-back">Retour</a>
+        </div>
+    </form>
+    
+    {% if result %}
+    <div class="result">
+        <h2>Résultats</h2>
+        <p>Votre BMR est de <strong>{{ result.bmr }}</strong> calories par jour</p>
+        <h3 style="margin-top: 15px;">Besoins caloriques quotidiens selon votre niveau d'activité :</h3>
+        <ul style="list-style: none; margin-top: 10px;">
+            <li>Sédentaire : <strong>{{ result.daily_calories.sédentaire }}</strong> calories</li>
+            <li>Légèrement actif : <strong>{{ result.daily_calories.légèrement_actif }}</strong> calories</li>
+            <li>Modérément actif : <strong>{{ result.daily_calories.modérément_actif }}</strong> calories</li>
+            <li>Très actif : <strong>{{ result.daily_calories.très_actif }}</strong> calories</li>
+            <li>Extrêmement actif : <strong>{{ result.daily_calories.extrêmement_actif }}</strong> calories</li>
+        </ul>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
