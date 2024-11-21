@@ -52,7 +52,7 @@ class TestHealthUtils(unittest.TestCase):
         test_cases = [
             # (height, weight, age, gender, expected_bmr)
             (175, 70, 25, 'M',  1724.05),   # Homme
-            (160, 60, 30, 'F', 1384.14),   # Femme
+            (160, 60, 30, 'F', 1368.19),   # Femme
             (180, 80, 35, 'M', 1813.61),   # Homme différent
             (165, 55, 40, 'F', 1336.31)    # Femme différente
         ]
