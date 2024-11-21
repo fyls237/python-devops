@@ -1,0 +1,116 @@
+name: Health Calculator Service CI/CD
+
+on:
+  push:
+    branches: 
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+
+env:
+  IMAGE_NAME: health-calculator-service
+  PORT: 5000
+  PYTHON_VERSION: '3.10'
+
+jobs:
+  code-quality:
+    name: Code Quality & Testing
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Install Dependencies
+        run: |
+          python -m venv venv
+          . venv/bin/activate
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest coverage flake8
+      
+      - name: Lint Code
+        run: |
+          . venv/bin/activate
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+      
+      - name: Run Tests
+        run: |
+          . venv/bin/activate
+          python -m pytest tests/ -v
+      
+      - name: Check Test Coverage
+        run: |
+          . venv/bin/activate
+          coverage run -m pytest
+          coverage report --fail-under=80
+
+  docker-build:
+    name: Build Docker Image
+    needs: code-quality
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      
+      - name: Build Docker Image
+        run: |
+          make docker-build \
+            DOCKER_REGISTRY=${{ secrets.DOCKER_REGISTRY }} \
+            DOCKER_TAG=${{ github.sha }}
+      
+      - name: Push Docker Image
+        if: github.ref == 'refs/heads/main'
+        run: |
+          make docker-push \
+            DOCKER_REGISTRY=${{ secrets.DOCKER_REGISTRY }} \
+            DOCKER_TAG=${{ github.sha }}
+
+  deploy:
+    name: Deploy to Production
+    needs: [code-quality, docker-build]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      
+      - name: Azure WebApp Deploy
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: 'health-calculator-app'
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          images: ${{ secrets.DOCKER_REGISTRY }}${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+      - name: Send Deployment Notification
+        if: success()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          text: Déploiement réussi sur Azure Web App
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+
+# Gestion de la concurrence
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
