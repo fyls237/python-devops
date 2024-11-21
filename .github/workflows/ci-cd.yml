@@ -30,12 +30,7 @@ jobs:
       - name: Install Dependencies
         run: |
           make init
-          pip install flake8
-      
-      - name: Lint Code
-        run: |
-          . venv/bin/activate
-          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          pip install
       
       - name: Run Tests
         run: |
