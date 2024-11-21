@@ -30,6 +30,7 @@ jobs:
       - name: Install Dependencies
         run: |
           make init
+          pip install flake8
       
       - name: Lint Code
         run: |
