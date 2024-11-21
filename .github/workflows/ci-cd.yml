@@ -30,7 +30,6 @@ jobs:
       - name: Install Dependencies
         run: |
           make init
-          pip install
       
       - name: Run Tests
         run: |

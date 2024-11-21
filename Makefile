@@ -7,7 +7,7 @@ init:
 	@echo "Installing dependencies..."
 	python -m venv venv
 	. venv/bin/activate; \
-	pip install --upgrade pip setuptools; \
+	pip install --upgrade pip; \
 	pip install -r requirements.txt
 
 run:
